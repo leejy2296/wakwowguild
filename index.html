@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>왁타버스 길드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #e8c060; --gold-light: #ffe080; --gold-dim: #a07830;
+    --bg: #0a0805; --bg2: #141008; --bg3: #1a1410; --bg-h: #222018;
+    --border: #2a2416; --border-g: #3a3020;
+    --text: #e8dfc0; --text-dim: #8a806a; --text-bright: #fff8e8;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; font-weight:400; min-height:100vh; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 24px 80px; }
+
+  .hd { margin-bottom:32px; display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .hd-left h1 { font-size:22px; font-weight:700; color:var(--gold-light); letter-spacing:1px; margin-bottom:5px; }
+  .hd-left p  { font-size:13px; color:var(--text-dim); letter-spacing:1px; }
+  .hd-right { display:flex; align-items:center; gap:14px; }
+  .updated-at { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text-dim); }
+  .updated-at span { color:var(--gold-dim); }
+  .reg-link { font-size:12px; font-weight:600; color:var(--gold-dim); text-decoration:none; letter-spacing:1px; padding:5px 12px; border:1px solid var(--border-g); border-radius:2px; transition:all .15s; }
+  .reg-link:hover { color:var(--gold-light); border-color:var(--gold-dim); background:var(--bg3); }
+
+  /* Loading */
+  .loading {
+    display:flex; align-items:center; gap:10px;
+    padding:60px 0; justify-content:center;
+    font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--text-dim);
+  }
+  .spinner {
+    width:16px; height:16px; border:2px solid var(--border-g);
+    border-top-color:var(--gold); border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* Error */
+  .load-err { text-align:center; padding:60px; color:var(--text-dim); font-size:14px; display:none; }
+
+  /* Filters */
+  .filter-block { background:var(--bg2); border:1px solid var(--border-g); border-radius:3px; padding:6px 16px; margin-bottom:16px; }
+  .filter-row {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:10px 0; border-bottom:1px solid var(--border);
+  }
+  .filter-row:last-child { border-bottom:none; }
+  .filter-label {
+    font-family:'Share Tech Mono',monospace; font-size:10px; font-weight:700;
+    letter-spacing:2px; color:var(--gold-dim); text-transform:uppercase;
+    min-width:40px; flex-shrink:0;
+  }
+  .tag {
+    font-size:13px; font-weight:500; padding:5px 14px; border-radius:2px;
+    border:1px solid var(--border-g); color:var(--text-dim);
+    background:none; cursor:pointer; transition:all .12s; user-select:none;
+  }
+  .tag:hover { border-color:var(--gold-dim); color:var(--text); background:var(--bg3); }
+  .tag.active-all { border-color:var(--gold); color:var(--gold-light); background:rgba(232,192,96,.12); font-weight:700; }
+  .tag.active     { border-color:var(--gold-dim); color:var(--gold-light); background:rgba(232,192,96,.08); font-weight:600; }
+
+  /* Summary */
+  .summary { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text-dim); margin-bottom:10px; }
+  .summary span { color:var(--gold); font-weight:700; }
+
+  /* Table */
+  .table-wrap { border:1px solid var(--border-g); border-radius:3px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead th {
+    background:var(--bg2); font-family:'Share Tech Mono',monospace;
+    font-size:11px; letter-spacing:2px; color:var(--gold);
+    text-transform:uppercase; padding:12px 16px;
+    text-align:left; font-weight:700; border-bottom:2px solid var(--border-g);
+  }
+  tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:var(--bg-h); }
+  tbody tr.is-master { background:rgba(232,192,96,.05); }
+  tbody tr.is-master:hover { background:rgba(232,192,96,.1); }
+  td { padding:11px 16px; font-size:15px; }
+
+  .cat-master  { color:#ffe566; font-weight:800; }
+  .cat-officer { color:#60d0ff; font-weight:700; }
+  .cat-veteran { color:#c8a8ff; font-weight:700; }
+  .cat-member  { color:#50e8b0; font-weight:700; }
+
+  .cls-Warrior { color:#e8b840; font-weight:600; }
+  .cls-Paladin { color:#ff9aba; font-weight:600; }
+  .cls-Hunter  { color:#90e040; font-weight:600; }
+  .cls-Rogue   { color:#fff060; font-weight:600; }
+  .cls-Priest  { color:#f0f0f0; font-weight:600; }
+  .cls-Shaman  { color:#40b8ff; font-weight:600; }
+  .cls-Mage    { color:#40d8ff; font-weight:600; }
+  .cls-Warlock { color:#a888ff; font-weight:600; }
+  .cls-Druid   { color:#ff8820; font-weight:600; }
+
+  td.name-col  { font-weight:700; font-size:15px; color:var(--text-bright); }
+  td.level-col { font-family:'Share Tech Mono',monospace; font-size:14px; font-weight:700; color:var(--text); }
+  td.race-col  { color:#b0a888; font-size:14px; font-weight:400; }
+  .empty-row td { text-align:center; padding:48px; color:var(--text-dim); font-size:14px; }
+
+  #main { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hd">
+    <div class="hd-left">
+      <h1>왁타버스 길드</h1>
+      <p>펜구스의 흉포 · TBC Anniversary · KR</p>
+    </div>
+    <div class="hd-right">
+      <div class="updated-at" id="updatedAt"></div>
+      <a class="reg-link" href="register.html">데이터 등록 →</a>
+    </div>
+  </div>
+
+  <!-- 로딩 -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>데이터 불러오는 중...
+  </div>
+
+  <!-- 오류 -->
+  <div class="load-err" id="loadErr">데이터를 불러올 수 없습니다.<br>Firestore 연결을 확인하거나 <a href="register.html" style="color:var(--gold-dim)">데이터를 먼저 등록</a>해 주세요.</div>
+
+  <!-- 메인 -->
+  <div id="main">
+    <div class="filter-block">
+      <div class="filter-row" id="groupRow">
+        <span class="filter-label">분류</span>
+        <span class="tag active-all" data-group="all"    onclick="toggleGroup(this)">전체</span>
+        <span class="tag"            data-group="고정멤버" onclick="toggleGroup(this)">고정멤버</span>
+        <span class="tag"            data-group="버튜버"   onclick="toggleGroup(this)">버튜버</span>
+        <span class="tag"            data-group="중간계"   onclick="toggleGroup(this)">중간계</span>
+      </div>
+      <div class="filter-row" id="clsRow">
+        <span class="filter-label">직업</span>
+        <span class="tag active-all" data-cls="all" onclick="toggleCls(this)">전체</span>
+      </div>
+    </div>
+
+    <div class="summary" id="summary"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>분류</th><th>닉네임</th><th>직업</th><th>종족</th><th>레벨</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import { getFirestore, doc, getDoc }
+    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyADwiTgaJl_3tFBwWUTpzGB4c4GYxlmPfQ",
+    authDomain: "virtualwow-693c3.firebaseapp.com",
+    projectId: "virtualwow-693c3",
+    storageBucket: "virtualwow-693c3.firebasestorage.app",
+    messagingSenderId: "204173726120",
+    appId: "1:204173726120:web:f89f2975c9ff998d3f0d9d",
+    measurementId: "G-ZLFJ0R5N5Z"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  const CLASS_EN_TO_KO = {
+    Rogue:'도적', Druid:'드루이드', Mage:'마법사', Hunter:'사냥꾼',
+    Priest:'사제', Paladin:'성기사', Warrior:'전사', Shaman:'주술사', Warlock:'흑마법사'
+  };
+  const RACE_KO = {
+    'Human':'인간','Dwarf':'드워프','Night Elf':'나이트 엘프','Gnome':'노움','Draenei':'드레나이',
+    'Orc':'오크','Undead':'언데드','Tauren':'타우렌','Troll':'트롤','Blood Elf':'블러드 엘프'
+  };
+  const GROUP_CLS   = { '우왁굳':'cat-master','고정멤버':'cat-officer','버튜버':'cat-veteran','중간계':'cat-member' };
+  const GROUP_ORDER = { '우왁굳':0,'고정멤버':1,'버튜버':2,'중간계':3 };
+
+  let allMembers   = [];
+  let activeGroups = new Set(['all']);
+  let activeCls    = new Set(['all']);
+
+  // ── Firestore에서 데이터 로드 ──
+  async function load() {
+    try {
+      const snap = await getDoc(doc(db, 'guild', 'waktaverse'));
+      if (!snap.exists()) throw new Error('데이터 없음');
+
+      const data = snap.data();
+      allMembers = (data.members || []).map(m => ({
+        ...m,
+        classKo: CLASS_EN_TO_KO[m.class] || m.class
+      }));
+
+      // 업데이트 시각
+      const t = data.updatedAt?.toDate();
+      if (t) {
+        document.getElementById('updatedAt').innerHTML =
+          `업데이트 <span>${t.toLocaleString('ko-KR')}</span>`;
+      }
+
+      // 직업 태그 생성
+      const clsRow = document.getElementById('clsRow');
+      const clsSet = [...new Set(allMembers.map(m => m.classKo))].sort((a,b) => a.localeCompare(b,'ko'));
+      clsSet.forEach(ko => {
+        const span = document.createElement('span');
+        span.className = 'tag';
+        span.dataset.cls = ko;
+        span.textContent = ko;
+        span.onclick = function() { toggleCls(this); };
+        clsRow.appendChild(span);
+      });
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('main').style.display = 'block';
+      render();
+
+    } catch(e) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('loadErr').style.display = 'block';
+    }
+  }
+
+  load();
+
+  // ── 필터 토글 ──
+  window.toggleGroup = function(el) {
+    const val = el.dataset.group;
+    if (val === 'all') {
+      activeGroups = new Set(['all']);
+    } else {
+      activeGroups.delete('all');
+      activeGroups.has(val) ? activeGroups.delete(val) : activeGroups.add(val);
+      if (!activeGroups.size) activeGroups.add('all');
+    }
+    document.querySelectorAll('[data-group]').forEach(t => {
+      const v = t.dataset.group;
+      t.className = 'tag' + (v==='all'&&activeGroups.has('all')?' active-all': v!=='all'&&activeGroups.has(v)?' active':'');
+    });
+    render();
+  };
+
+  window.toggleCls = function(el) {
+    const val = el.dataset.cls;
+    if (val === 'all') {
+      activeCls = new Set(['all']);
+    } else {
+      activeCls.delete('all');
+      activeCls.has(val) ? activeCls.delete(val) : activeCls.add(val);
+      if (!activeCls.size) activeCls.add('all');
+    }
+    document.querySelectorAll('[data-cls]').forEach(t => {
+      const v = t.dataset.cls;
+      t.className = 'tag' + (v==='all'&&activeCls.has('all')?' active-all': v!=='all'&&activeCls.has(v)?' active':'');
+    });
+    render();
+  };
+
+  // ── 렌더 ──
+  function render() {
+    let visible = allMembers.filter(m => {
+      const gOk = activeGroups.has('all') || activeGroups.has(m.group);
+      const cOk = activeCls.has('all')    || activeCls.has(m.classKo);
+      return gOk && cOk;
+    });
+
+    visible.sort((a, b) => {
+      if (a.group==='우왁굳' && b.group!=='우왁굳') return -1;
+      if (b.group==='우왁굳' && a.group!=='우왁굳') return  1;
+      const go = (GROUP_ORDER[a.group]??9) - (GROUP_ORDER[b.group]??9);
+      if (go !== 0) return go;
+      const cc = a.classKo.localeCompare(b.classKo, 'ko');
+      return cc !== 0 ? cc : b.level - a.level;
+    });
+
+    document.getElementById('summary').innerHTML =
+      `<span>${visible.length}</span>명 표시 중 (전체 ${allMembers.length}명)`;
+
+    const tbody = document.getElementById('tbody');
+    if (!visible.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">조건에 맞는 멤버가 없습니다.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = visible.map(m =>
+      `<tr${m.group==='우왁굳' ? ' class="is-master"' : ''}>
+        <td class="${GROUP_CLS[m.group]||''}">${m.group}</td>
+        <td class="name-col">${m.name}</td>
+        <td class="cls-${m.class}">${m.classKo}</td>
+        <td class="race-col">${RACE_KO[m.race]||m.race}</td>
+        <td class="level-col">${m.level}</td>
+      </tr>`
+    ).join('');
+  }
+</script>
+</body>
+</html>
